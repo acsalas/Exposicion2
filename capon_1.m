@@ -43,13 +43,9 @@ figure(2)
 polar(betar,patternv)
 title ('Array pattern')
 
-%formacion del steering vector de una interferente a 63°
-% a0 = exp(i* n *k* d * cosBeta);
-% a0 = a0';
-
 
 %generar el vector de pesos w (tambien de dimension N)
-w = zeros(1,N);
+w = ones(1,N);
 %w = w';
 w(1) = 1;  
 %w = exp(1i* n );
@@ -62,21 +58,33 @@ s = Ad*exp(1i*wd*t);
 
 %generar ruido
 N0 = .01; %varianza
-Noise = randn(N, length(t))*N0;
+Noise = randn(N, length(t))*sqrt(N0);
 
-x = a0*s+Noise;
+x = a0*s;%+Noise;
+
+%formacion del steering vector de una interferente a 63°
+Beta_int = 63; %direccion del arreglo
+Betar_int = Beta_int*pi/180;
+cosBeta_int = cos(Betar_int);
+a_int = exp(1i* n *k* d * cosBeta_int);
+a_int = conj(a_int)';
+
+%señal interferente
+s_int = .1*Ad*exp(1i*wd*t);
+x_int = a_int*s_int;
 
 y = w*x;
 %grafica señal
 figure(3)
 
 plot(t,y);
-
+x= x_int+x;
 %algoritmo de Capon
 R = x*x';
 R_inv = inv(R);
 
 w_opt = R_inv*a0/(conj(a0)'*R_inv*a0);
+w_opt  = w_opt./abs(w_opt);
 y_opt = conj(w_opt)'*x;
 
 %grafica señal
