@@ -16,18 +16,19 @@ cosBeta = cos(Betar);
 
 %formacion del steering vector en la direccion Beta
 a0 = exp(1i* n *k* d * cosBeta);
+a0 = conj(a0)'; %es un vector columna
 
 %graficacion del espectro del arreglo
 
 arg = (-nfft/2:(nfft/2)-1) ./ (nfft*dol);
 idx = find(abs(arg) <= 1);
 cosbeta = arg(idx);
-betar = asin(cosbeta);
+betar = acos(cosbeta)-pi/2;
 
 % convert angle into degrees
 beta = betar .* (180.0 / pi);
 % Compute fft of w (radiation pattern)
-patternv = (abs(fftshift(fft(a0,nfft)))).^2;
+patternv = (abs(fftshift(fft(a0',nfft)))).^2;
 % convert radiation pattern to dBs
 patternr = 10*log10(patternv(idx) ./N + eps);
 % Compute directive gain pattern
@@ -44,43 +45,57 @@ title ('Array pattern')
 
 
 %generar el vector de pesos w (tambien de dimension N)
-w = zeros(1,N);
+w = ones(1,N);
+%w = w';
 w(1) = 1;  
 %w = exp(1i* n );
 
-%generar se�al s
+%generar señal s
+Ad = 1;
 wd = 2*pi*c/lambda;
 t = 0:.001:1;
-s = exp(1i*wd*t);
+s = Ad*exp(1i*wd*t);
 
 %generar ruido
 N0 = .01; %varianza
-Noise = randn(N, length(t))*N0;
+Noise = randn(N, length(t))*sqrt(N0);
 
-x = a0'*s+Noise;
+x = a0*s;%+Noise;
+
+%formacion del steering vector de una interferente a 63°
+Beta_int = 63; %direccion del arreglo
+Betar_int = Beta_int*pi/180;
+cosBeta_int = cos(Betar_int);
+a_int = exp(1i* n *k* d * cosBeta_int);
+a_int = conj(a_int)';
+
+%señal interferente
+s_int = .1*Ad*exp(1i*wd*t);
+x_int = a_int*s_int;
 
 y = w*x;
-%grafica se�al
+%grafica señal
 figure(3)
 
 plot(t,y);
-
+x= x_int+x;
 %algoritmo de Capon
 R = x*x';
 R_inv = inv(R);
 
-w_opt = R_inv*a0'/(conj(a0)*R_inv*a0');
-y_opt = w_opt'*x;
+w_opt = R_inv*a0/(conj(a0)'*R_inv*a0);
+w_opt  = w_opt./abs(w_opt);
+y_opt = conj(w_opt)'*x;
 
-%grafica se�al
+%grafica señal
 figure(4)
 
 plot(t,y_opt);
 
 %coeficientes optimos segun Capon
-
+%(conj(w_opt).*a0)'
 % Compute fft of w (radiation pattern)
-patternvopt = (abs(fftshift(fft(conj(w_opt)'.*a0,nfft)))).^2;
+patternvopt = (abs(fftshift(fft((conj(w_opt).*a0)',nfft)))).^2;
 % convert radiation pattern to dBs
 patternropt = 10*log10(patternvopt(idx) ./N + eps);
 % Compute directive gain pattern
