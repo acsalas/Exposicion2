@@ -46,8 +46,8 @@ title ('Array pattern')
 
 %generar el vector de pesos w (tambien de dimension N)
 w = ones(1,N);
-%w = w';
-w(1) = 1;  
+w = w';
+  
 %w = exp(1i* n );
 
 %generar señal s
@@ -73,7 +73,7 @@ a_int = conj(a_int)';
 s_int = .1*Ad*exp(1i*wd*t);
 x_int = a_int*s_int;
 
-y = w*x;
+y = w'*x;
 %grafica señal
 figure(3)
 
@@ -95,12 +95,12 @@ plot(t,y_opt);
 %coeficientes optimos segun Capon
 %(conj(w_opt).*a0)'
 % Compute fft of w (radiation pattern)
-patternvopt = (abs(fftshift(fft((conj(w_opt).*a0)',nfft)))).^2;
-% convert radiation pattern to dBs
-patternropt = 10*log10(patternvopt(idx) ./N + eps);
-% Compute directive gain pattern
-rbarr = 0.5 *sum(patternvopt(idx)) ./ (nfft * dol);
-patterngopt = 10*log10(patternvopt(idx) + eps) - 10*log10(rbarr + eps);
+[patternvopt,patternropt,patterngopt]=obtener_patrones(w_opt,a0,nfft, N, idx, dol);
+
+w_1 = w;
+w_1(3)= .9+.5j;
+
+[patternvopt,patternropt,patterngopt]=obtener_patrones(w_1,a0,nfft, N, idx, dol);
 
 figure(5)
 plot(beta, patterng,'linewidth',1.5)
