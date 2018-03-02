@@ -16,18 +16,19 @@ cosBeta = cos(Betar);
 
 %formacion del steering vector en la direccion Beta
 a0 = exp(1i* n *k* d * cosBeta);
+a0 = conj(a0)'; %es un vector columna
 
 %graficacion del espectro del arreglo
 
 arg = (-nfft/2:(nfft/2)-1) ./ (nfft*dol);
 idx = find(abs(arg) <= 1);
 cosbeta = arg(idx);
-betar = asin(cosbeta);
+betar = acos(cosbeta)-pi/2;
 
 % convert angle into degrees
 beta = betar .* (180.0 / pi);
 % Compute fft of w (radiation pattern)
-patternv = (abs(fftshift(fft(a0,nfft)))).^2;
+patternv = (abs(fftshift(fft(a0',nfft)))).^2;
 % convert radiation pattern to dBs
 patternr = 10*log10(patternv(idx) ./N + eps);
 % Compute directive gain pattern
@@ -42,25 +43,31 @@ figure(2)
 polar(betar,patternv)
 title ('Array pattern')
 
+%formacion del steering vector de una interferente a 63Â°
+% a0 = exp(i* n *k* d * cosBeta);
+% a0 = a0';
+
 
 %generar el vector de pesos w (tambien de dimension N)
 w = zeros(1,N);
+%w = w';
 w(1) = 1;  
 %w = exp(1i* n );
 
-%generar señal s
+%generar seÃ±al s
+Ad = 1;
 wd = 2*pi*c/lambda;
 t = 0:.001:1;
-s = exp(1i*wd*t);
+s = Ad*exp(1i*wd*t);
 
 %generar ruido
 N0 = .01; %varianza
 Noise = randn(N, length(t))*N0;
 
-x = a0'*s+Noise;
+x = a0*s+Noise;
 
 y = w*x;
-%grafica señal
+%grafica seÃ±al
 figure(3)
 
 plot(t,y);
@@ -69,18 +76,18 @@ plot(t,y);
 R = x*x';
 R_inv = inv(R);
 
-w_opt = R_inv*a0'/(conj(a0)*R_inv*a0');
-y_opt = w_opt'*x;
+w_opt = R_inv*a0/(conj(a0)'*R_inv*a0);
+y_opt = conj(w_opt)'*x;
 
-%grafica señal
+%grafica seÃ±al
 figure(4)
 
 plot(t,y_opt);
 
 %coeficientes optimos segun Capon
-
+%(conj(w_opt).*a0)'
 % Compute fft of w (radiation pattern)
-patternvopt = (abs(fftshift(fft(conj(w_opt)'.*a0,nfft)))).^2;
+patternvopt = (abs(fftshift(fft((conj(w_opt).*a0)',nfft)))).^2;
 % convert radiation pattern to dBs
 patternropt = 10*log10(patternvopt(idx) ./N + eps);
 % Compute directive gain pattern
